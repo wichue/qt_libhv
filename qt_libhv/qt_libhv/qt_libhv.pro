@@ -218,7 +218,12 @@ HEADERS += \
     ../../util/base64.h \
     ../../util/md5.h \
     ../../util/sha1.h \
-    mainwindow.h
+    mainwindow.h \
+    QtTest/EventLoopThread_Test.h \
+    QtTest/TcpClient_Test.h \
+    QtTest/TcpServer_Test.h \
+    QtTest/UdpClient_Test.h \
+    QtTest/UdpServer_Test.h
 
 FORMS += \
     mainwindow.ui
