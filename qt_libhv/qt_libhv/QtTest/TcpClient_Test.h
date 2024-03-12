@@ -11,6 +11,18 @@
 
 using namespace hv;
 
+/**
+ * @brief tcp客户端测试
+ * 创建tcp socket,非阻塞连接到tcp服务端,实现接收回调 onMessage,连接结果回调 onConnection,可以设置连接失败或断开时重连
+ * 创建socket:任意线程->TcpClient::createsocket->创建fd和 hio_t.
+ * 非阻塞连接:任意线程->TcpClient::start->事件循环线程->TcpClientTmpl::startConnect->SocketChannel::startConnect->hio_connect->
+ * 系统调用 connect,根据返回值判断,epoll监听可写事件,创建超时定时器,超时或连接成功后->onConnection,判断是否重连
+ * 接收数据:epoll_wait调用栈->iowatcher_poll_events->EVENT_PENDING(io)添加到优先级队列->
+ * (处理优先级队列)hloop_process_pendings->hio_handle_events->nio_read->__read_cb->hio_handle_read->hio_read_cb->Channel::on_read->TcpClient::onMessage 执行自定义接收回调
+ *
+ * 数据发送:任意线程 runInLoop->EventLoop::run->hloop_run->hloop_process_events->hloop_process_pendings->EventLoop::onTimer->Channel::write ->hio_write->__nio_write,系统调用 send
+ * 使用 SocketChannel::write 发送,数据发送线程安全锁 hio_t::write_mutex ,支持多线程发送.
+ */
 int TcpClient_Test() {
     const char* remote_host = "192.168.3.91";
     int remote_port = 9090;

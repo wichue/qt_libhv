@@ -9,6 +9,22 @@ using namespace hv;
 
 #define TEST_TLS        0
 
+/**
+* @brief tcp服务端测试
+* TcpServer 继承于 EventLoopThread ,tcp监听 startAccept 使用这个继承的 EventLoopThread 线程;
+* TcpServer 的基类 TcpServerEventLoopTmpl 拥有成员变量 EventLoopThreadPool,接入的tcp客户端分配到 EventLoopThreadPool.
+* 新接入tcp客户端会创建 TSocketChannelPtr,存入 std::map<uint32_t, TSocketChannelPtr> channels 成员容器.
+*
+* 启动监听:任意线程->TcpServer::createsocket->Listen->ListenFD->系统调用 listen
+* 监听tcp接入事件:EventLoop::runInLoop->...->TcpServerEventLoopTmpl::startAccept->haccept->hio_accept->hio_add->iowatcher_add_event,把 listenfd 添加到 epoll 监听.
+* tcp客户端接入:tcp监听所在的 EventLoopThread->EventLoop::run->hloop_run->hloop_process_events->hloop_process_pendings->hio_handle_events->nio_accept(accept)->__accept_cb->hio_accept_cb->TcpServerEventLoopTmpl::onAccept,
+* 在分配的 EventLoopThreadPool 线程执行->runInLoop->EventLoop::run->...->TcpServerEventLoopTmpl::newConnEvent->TcpServerEventLoopTmpl::onConnection,调用自定义的回调函数,tcp新接入和断开时均调用该回调函数.
+*
+* 接收数据:EventLoop::run->hloop_run->hloop_process_events->hloop_process_pendings->hio_handle_events->nio_read->__read_cb->hio_handle_read->hio_read_cb->Channel::on_read
+* ->TcpServerEventLoopTmpl::newConnEvent->TcpServerEventLoopTmpl::onMessage,调用自定义接收回调,运行在分配的 EventLoopThreadPool 线程
+*
+* 数据发送:和tcp客户端类似,使用 SocketChannel::write 发送,建议使用分配的 EventLoopThreadPool 线程发送,也可在任意线程发送,线程安全锁 hio_t::write_mutex
+*/
 int TcpServer_Test() {
     int port = 9090;
 
