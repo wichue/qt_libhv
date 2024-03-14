@@ -24,6 +24,8 @@ int UdpClient_Test() {
     cli.onMessage = [](const SocketChannelPtr& channel, Buffer* buf) {
         printf("< %.*s\n", (int)buf->size(), (char*)buf->data());
     };
+
+    //UdpClient 构建可传入已有EventLoopThread，不传入时自动创建一个 EventLoopThread。
     cli.start();
 
     // sendto(time) every 3s

@@ -29,6 +29,7 @@ int UdpServer_Test() {
     };
 
     //启动 EventLoopThread 线程
+    //UdpServer 构建可传入已有EventLoopThread，不传入时自动创建一个 EventLoopThread。
     srv.start();
 
     std::string str;
